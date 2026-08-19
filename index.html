@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Calculadora MIR · ICS 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1C22;
+    --surface:#102A32;
+    --surface2:#16363F;
+    --line:#1E4750;
+    --ink:#EAF2F0;
+    --ink-dim:#8FACA9;
+    --teal:#2DD4BF;
+    --amber:#F2A93B;
+    --coral:#FF6B5E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% -10%, rgba(45,212,191,0.10), transparent 40%),
+      radial-gradient(circle at 100% 10%, rgba(242,169,59,0.08), transparent 35%);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .app{width:100%; max-width:440px;}
+  .masthead{margin-bottom:20px;}
+  .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex; align-items:center; gap:8px;
+  }
+  .kicker::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--teal); box-shadow:0 0 8px var(--teal); animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.3;}}
+  h1{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:26px;
+    font-weight:700;
+    margin-top:6px;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--ink-dim); font-size:13px; margin-top:4px;}
+
+  /* ECG progress */
+  .ecg-wrap{margin:22px 0 8px; height:46px; position:relative; overflow:hidden;}
+  .ecg-wrap svg{width:100%; height:100%; display:block;}
+  .ecg-path{
+    fill:none; stroke:var(--line); stroke-width:2;
+  }
+  .ecg-path-fill{
+    fill:none; stroke:var(--teal); stroke-width:2.5;
+    stroke-dasharray:1000; stroke-dashoffset:1000;
+    filter:drop-shadow(0 0 4px rgba(45,212,191,0.7));
+    transition:stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1);
+  }
+  .steps-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim); margin-bottom:22px;}
+  .steps-row span{transition:color .3s;}
+  .steps-row span.active{color:var(--teal); font-weight:600;}
+  .steps-row span.done{color:var(--ink);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px;
+  }
+  .step-title{font-size:16px; font-weight:600; margin-bottom:2px;}
+  .step-desc{font-size:13px; color:var(--ink-dim); margin-bottom:18px;}
+
+  .year-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:6px;}
+  .year-btn{
+    background:var(--surface2); border:1px solid var(--line); border-radius:8px;
+    padding:12px 0; text-align:center; cursor:pointer; color:var(--ink);
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px;
+    transition:all .15s;
+  }
+  .year-btn:hover{border-color:var(--teal);}
+  .year-btn.sel{background:rgba(45,212,191,0.12); border-color:var(--teal); color:var(--teal);}
+  .year-hint{font-size:12px; color:var(--ink-dim); text-align:center; min-height:16px;}
+
+  .field{margin-bottom:16px;}
+  .field-label{font-size:13px; color:var(--ink-dim); margin-bottom:8px; display:flex; justify-content:space-between;}
+  .field-label b{color:var(--ink); font-weight:600;}
+  .num-row{display:flex; align-items:center; gap:10px;}
+  .num-btn{
+    width:38px; height:38px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface2); color:var(--ink); font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .num-btn:active{background:var(--line);}
+  .num-val{
+    flex:1; text-align:center; font-family:'IBM Plex Mono',monospace;
+    font-size:18px; font-weight:600; background:var(--surface2);
+    border:1px solid var(--line); border-radius:8px; padding:8px 0;
+  }
+  .guardia-price{font-family:'IBM Plex Mono',monospace; color:var(--amber); font-size:12px;}
+
+  .slider-wrap{margin-top:6px;}
+  input[type=range]{
+    width:100%; accent-color:var(--teal); height:4px;
+    background:var(--surface2);
+  }
+  .slider-vals{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim); margin-top:6px;}
+
+  .btn{
+    width:100%; padding:13px; border-radius:8px; border:none;
+    font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer; margin-top:8px;
+  }
+  .btn-primary{background:var(--teal); color:#06211F;}
+  .btn-primary:disabled{opacity:0.35; cursor:not-allowed;}
+  .btn-ghost{background:transparent; color:var(--ink-dim); border:1px solid var(--line);}
+  .btn-row{display:flex; gap:10px; margin-top:18px;}
+  .btn-row .btn{margin-top:0;}
+
+  .result-hero{text-align:center; padding:14px 0 20px; border-bottom:1px dashed var(--line); margin-bottom:18px;}
+  .result-label{font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.08em;}
+  .result-num{font-family:'IBM Plex Mono',monospace; font-size:40px; font-weight:700; color:var(--teal); margin-top:6px;}
+  .result-sub{font-size:12px; color:var(--ink-dim); margin-top:4px;}
+
+  .breakdown-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .label{color:var(--ink-dim);}
+  .breakdown-row .val{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .val.pos{color:var(--ink);}
+  .val.neg{color:var(--coral);}
+  .val.amber{color:var(--amber);}
+  .val.teal{color:var(--teal);}
+
+  .footnote{font-size:11px; color:var(--ink-dim); line-height:1.5; margin-top:18px; padding-top:14px; border-top:1px solid var(--line);}
+  .footnote b{color:var(--ink-dim);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="masthead">
+    <div class="kicker">Institut Català de la Salut · en directo</div>
+    <h1>Calculadora MIR Familia</h1>
+    <div class="sub">Retribuciones ICS · MFiC Catalunya 2026 (estimado)</div>
+  </div>
+
+  <div class="ecg-wrap">
+    <svg viewBox="0 0 400 46" preserveAspectRatio="none">
+      <path class="ecg-path" d="M0,23 L60,23 L75,23 L85,6 L95,40 L105,14 L115,23 L160,23 L175,23 L185,10 L195,34 L205,23 L400,23"/>
+      <path id="ecgFill" class="ecg-path-fill" d="M0,23 L60,23 L75,23 L85,6 L95,40 L105,14 L115,23 L160,23 L175,23 L185,10 L195,34 L205,23 L400,23"/>
+    </svg>
+  </div>
+  <div class="steps-row">
+    <span data-s="1">01 · AÑO</span>
+    <span data-s="2">02 · GUARDIAS</span>
+    <span data-s="3">03 · IRPF</span>
+    <span data-s="4">04 · RESULTADO</span>
+  </div>
+
+  <div class="card">
+
+    <!-- STEP 1 -->
+    <div class="step" id="step1">
+      <div class="step-title">Año de residencia</div>
+      <div class="step-desc">Selecciona tu año MIR para cargar tu retribución base ICS.</div>
+      <div class="year-grid" id="yearGrid"></div>
+      <div class="year-hint" id="yearHint">&nbsp;</div>
+      <button class="btn btn-primary" id="toStep2" disabled>Continuar →</button>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step2" style="display:none">
+      <div class="step-title">Guardias del mes</div>
+      <div class="step-desc">Indica cuántas guardias has hecho este mes, por tipo.</div>
+
+      <div class="field">
+        <div class="field-label"><span>24h Laborables (lun–jue)</span><span class="guardia-price" id="priceLab"></span></div>
+        <div class="num-row">
+          <div class="num-btn" onclick="changeGuardia('lab',-1)">−</div>
+          <div class="num-val" id="valLab">0</div>
+          <div class="num-btn" onclick="changeGuardia('lab',1)">+</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>24h Viernes</span><span class="guardia-price" id="priceVie"></span></div>
+        <div class="num-row">
+          <div class="num-btn" onclick="changeGuardia('vie',-1)">−</div>
+          <div class="num-val" id="valVie">0</div>
+          <div class="num-btn" onclick="changeGuardia('vie',1)">+</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>24h Sábado</span><span class="guardia-price" id="priceSab"></span></div>
+        <div class="num-row">
+          <div class="num-btn" onclick="changeGuardia('sab',-1)">−</div>
+          <div class="num-val" id="valSab">0</div>
+          <div class="num-btn" onclick="changeGuardia('sab',1)">+</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>24h Domingo / festivo</span><span class="guardia-price" id="priceFest"></span></div>
+        <div class="num-row">
+          <div class="num-btn" onclick="changeGuardia('fest',-1)">−</div>
+          <div class="num-val" id="valFest">0</div>
+          <div class="num-btn" onclick="changeGuardia('fest',1)">+</div>
+        </div>
+      </div>
+
+      <!-- NUEVO CAMPO: Guardias Extra CAP -->
+      <div class="field">
+        <div class="field-label"><span>Extra CAP (tardes)</span><span class="guardia-price" id="priceCap"></span></div>
+        <div class="num-row">
+          <div class="num-btn" onclick="changeGuardia('cap',-1)">−</div>
+          <div class="num-val" id="valCap">0</div>
+          <div class="num-btn" onclick="changeGuardia('cap',1)">+</div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0;">
+        <div class="field-label"><span>Total en guardias</span><b id="guardiaTotal">0,00 €</b></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="step3" style="display:none">
+      <div class="step-title">Retención IRPF</div>
+      <div class="step-desc">Ajusta tu porcentaje de IRPF según lo que te retengan en nómina.</div>
+      <div class="field">
+        <div class="field-label"><span>Personalizar</span><b id="irpfVal">5%</b></div>
+        <div class="slider-wrap">
+          <input type="range" min="2" max="30" value="5" id="irpfSlider" oninput="updateIrpf(this.value)">
+          <div class="slider-vals"><span>2%</span><span>30%</span></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Ver resultado →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="step4" style="display:none">
+      <div class="result-hero">
+        <div class="result-label">Salario neto estimado</div>
+        <div class="result-num" id="resultNet">0,00 €</div>
+        <div class="result-sub">después de Seguridad Social e IRPF</div>
+      </div>
+
+      <div class="breakdown-row"><span class="label">Sueldo base (prorrateado)</span><span class="val pos" id="bkBase">—</span></div>
+      <!-- NUEVO CAMPO: Plus MFiC -->
+      <div class="breakdown-row"><span class="label">Plus Medicina Familiar</span><span class="val teal" id="bkPlusMfic">—</span></div>
+      <div class="breakdown-row"><span class="label">Guardias 24h</span><span class="val amber" id="bkGuardias">—</span></div>
+      <!-- NUEVO CAMPO: Desglose Extras CAP -->
+      <div class="breakdown-row"><span class="label">Guardias Extra CAP</span><span class="val amber" id="bkGuardiasCap">—</span></div>
+      
+      <div class="breakdown-row"><span class="label">Bruto mensual</span><span class="val pos" id="bkBruto">—</span></div>
+      <div class="breakdown-row"><span class="label">Seguridad Social (6,35%)</span><span class="val neg" id="bkSS">—</span></div>
+      <div class="breakdown-row"><span class="label">Retención IRPF</span><span class="val neg" id="bkIrpf">—</span></div>
+
+      <div class="field" style="margin-top:16px;">
+        <div class="field-label"><span>Ajustar IRPF</span><b id="irpfVal2">5%</b></div>
+        <input type="range" min="2" max="30" value="5" id="irpfSlider2" oninput="updateIrpf(this.value, true)">
+      </div>
+
+      <div class="footnote">
+        <b>Datos:</b> Incluye sueldo base ICS, Plus de Medicina Familiar y precios de módulos de atención continuada / tardes extra de CAP para 2026. Cifra orientativa, no sustituye la nómina oficial.
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Atrás</button>
+        <button class="btn btn-ghost" onclick="goStep(1)">Empezar de nuevo</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+// Plus mensual específico de Medicina Familiar (2026)
+const PLUS_MFIC_MENSUAL = 427.09; 
+
+// Precio por guardia extra de tarde en CAP
+const GUARDIA_CAP = {1: 87.55, 2: 105.05, 3: 190.00, 4: 190.00, 5: 190.00};
+// 5 Horas guardia
+// R1 = 5 * 17,51€/hora guardia laborable = 87,55€
+// R2 = 5 * 21,01€/hora guardia laborable = 105,05€
+
+// Sueldo base bruto anual sin guardias, oficial ICS 2026 (taula IMPORTS MENSUALS x14)
+const BASE_ANUAL = {
+  1: 21051.94,
+  2: 22649.34,
+  3: 24600.10,
+  4: 26552.40,
+  5: 28619.78
+};
+// Precio por guardia de 24h
+const GUARDIA_LAB = {1:242.31, 2:290.76, 3:339.23, 4:363.45, 5:363.45};
+const GUARDIA_VIE = {1:349.99, 2:419.98, 3:489.96, 4:524.96, 5:524.96};
+const GUARDIA_SAB = {1:538.41, 2:646.09, 3:753.78, 4:807.61, 5:807.61};
+const GUARDIA_FEST = {1:457.67, 2:549.18, 3:640.72, 4:686.47, 5:686.47};
+const SS_RATE = 0.0635;
+
+let state = { year:null, lab:0, vie:0, sab:0, fest:0, cap:0, irpf:5 };
+
+// build year grid
+const yearGrid = document.getElementById('yearGrid');
+for(let y=1;y<=5;y++){
+  const b = document.createElement('div');
+  b.className='year-btn';
+  b.textContent='R'+y;
+  b.onclick=()=>selectYear(y,b);
+  yearGrid.appendChild(b);
+}
+
+function fmt(n){
+  return n.toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2})+' €';
+}
+
+function selectYear(y, el){
+  state.year = y;
+  document.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('yearHint').textContent = 'Base: ' + fmt(BASE_ANUAL[y]/14) + ' / mes (14 pagas)';
+  document.getElementById('toStep2').disabled=false;
+}
+document.getElementById('toStep2').onclick = ()=>goStep(2);
+
+// Añadido el "cap" al mapeo
+const guardiaIds = {lab:'valLab', vie:'valVie', sab:'valSab', fest:'valFest', cap:'valCap'};
+function changeGuardia(type, delta){
+  state[type] = Math.max(0, state[type]+delta);
+  document.getElementById(guardiaIds[type]).textContent = state[type];
+  updateGuardiaTotal();
+}
+
+function totalGuardias24h(){
+  return state.lab*GUARDIA_LAB[state.year] + state.vie*GUARDIA_VIE[state.year]
+       + state.sab*GUARDIA_SAB[state.year] + state.fest*GUARDIA_FEST[state.year];
+}
+
+function totalGuardiasCap(){
+  return state.cap*GUARDIA_CAP[state.year];
+}
+
+function updateGuardiaTotal(){
+  document.getElementById('guardiaTotal').textContent = fmt(totalGuardias24h() + totalGuardiasCap());
+}
+
+function updateIrpf(v, fromResult){
+  state.irpf = Number(v);
+  document.getElementById('irpfVal').textContent = v+'%';
+  document.getElementById('irpfVal2').textContent = v+'%';
+  document.getElementById('irpfSlider').value = v;
+  document.getElementById('irpfSlider2').value = v;
+  if(fromResult) computeResult();
+}
+
+const ecgOffsets = {1:1000, 2:750, 3:500, 4:0};
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.style.display='none');
+  document.getElementById('step'+n).style.display='block';
+  document.querySelectorAll('.steps-row span').forEach(s=>{
+    const sn = Number(s.dataset.s);
+    s.classList.toggle('active', sn===n);
+    s.classList.toggle('done', sn<n);
+  });
+  document.getElementById('ecgFill').style.strokeDashoffset = ecgOffsets[n];
+
+  if(n===2){
+    document.getElementById('priceLab').textContent = fmt(GUARDIA_LAB[state.year])+' / guardia';
+    document.getElementById('priceVie').textContent = fmt(GUARDIA_VIE[state.year])+' / guardia';
+    document.getElementById('priceSab').textContent = fmt(GUARDIA_SAB[state.year])+' / guardia';
+    document.getElementById('priceFest').textContent = fmt(GUARDIA_FEST[state.year])+' / guardia';
+    
+    // Cargar el precio de la tarde de CAP
+    document.getElementById('priceCap').textContent = fmt(GUARDIA_CAP[state.year])+' / tarde';
+    updateGuardiaTotal();
+  }
+  if(n===4) computeResult();
+}
+
+function computeResult(){
+  const baseMes = BASE_ANUAL[state.year]/14;
+  const plusMfic = PLUS_MFIC_MENSUAL; // Variable añadida al cálculo
+  const guardias24 = totalGuardias24h();
+  const guardiasCap = totalGuardiasCap(); // Variable añadida al cálculo
+  
+  const bruto = baseMes + plusMfic + guardias24 + guardiasCap;
+  
+  const ss = bruto*SS_RATE;
+  const irpf = bruto*(state.irpf/100);
+  const neto = bruto - ss - irpf;
+
+  document.getElementById('resultNet').textContent = fmt(neto);
+  document.getElementById('bkBase').textContent = fmt(baseMes);
+  document.getElementById('bkPlusMfic').textContent = fmt(plusMfic);
+  document.getElementById('bkGuardias').textContent = fmt(guardias24);
+  document.getElementById('bkGuardiasCap').textContent = fmt(guardiasCap);
+  document.getElementById('bkBruto').textContent = fmt(bruto);
+  document.getElementById('bkSS').textContent = '−'+fmt(ss);
+  document.getElementById('bkIrpf').textContent = '−'+fmt(irpf);
+}
+</script>
+</body>
+</html>
